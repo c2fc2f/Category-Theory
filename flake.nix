@@ -22,11 +22,23 @@
           buildInputs = with pkgs; [
             opam
           ];
-        };
 
-        shellHook = ''
-          eval $(opam env)
-        '';
+          shellHook = ''
+            if [ ! -d "~/.opam" ]; then
+              opam init --bare -y --disable-sandboxing --quiet
+            fi
+
+            if ! opam switch show >/dev/null 2>&1; then
+              echo "Creating opam switch (this may take a few minutes)..."
+              opam switch create . 5.4.0 -y --quiet
+            fi
+
+            echo "Syncing tools: ocaml-lsp-server, dune, utop..."
+            opam install dune utop ocaml-lsp-server -y
+
+            eval $(opam env)
+          '';
+        };
       }
     );
 }
