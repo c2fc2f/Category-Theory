@@ -1,0 +1,4 @@
+(library
+  (name CategoryLib))
+
+(include_subdirs unqualified)
