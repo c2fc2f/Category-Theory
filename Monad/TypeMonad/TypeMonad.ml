@@ -70,6 +70,57 @@ end
 
 (* ======================================================================== *)
 
+module ToMonad (M : S_Base) : Monad.S = struct
+  module F :
+    EndoFunctor.S
+      with module C = Category.Type
+       and type 'a map_obj = 'a M.map_obj = struct
+    module C = Category.Type
+
+    type 'a map_obj = 'a M.map_obj
+
+    let map_obj _ = TypeRep.Type
+
+    let fmap (type a b) TypeRep.Type TypeRep.Type (f : a -> b) (x : a M.map_obj)
+        : b M.map_obj =
+      M.fmap f x
+  end
+
+  module Eta = struct
+    module F1 = Functor.Id (Category.Type)
+    module F2 = EndoFunctor.ToFunctor (F)
+
+    type nat_trans = { nat : 'a. 'a TypeRep.type_rep -> 'a -> 'a M.map_obj }
+
+    let nat_trans =
+      { nat = (fun (type a) TypeRep.Type (x : a) : a M.map_obj -> M.eta x) }
+  end
+
+  module Mu = struct
+    module F1 =
+      Functor.Compose (EndoFunctor.ToFunctor (F)) (EndoFunctor.ToFunctor (F))
+
+    module F2 = EndoFunctor.ToFunctor (F)
+
+    type nat_trans = {
+      nat : 'a. 'a TypeRep.type_rep -> 'a M.map_obj M.map_obj -> 'a M.map_obj;
+    }
+
+    let nat_trans =
+      {
+        nat =
+          (fun (type a)
+            TypeRep.Type
+            (x : a M.map_obj M.map_obj)
+            :
+            a M.map_obj
+          -> M.mu x);
+      }
+  end
+end
+
+(* ======================================================================== *)
+
 module List : S = Helper (struct
   type 'a map_obj = 'a list
 

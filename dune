@@ -1,4 +1,3 @@
 (library
   (name CategoryLib))
-
-(include_subdirs unqualified)
+  (include_subdirs unqualified)

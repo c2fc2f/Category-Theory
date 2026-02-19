@@ -44,8 +44,8 @@ module Swap : S = struct
     {
       nat =
         (fun (type a)
-          (_ : a F1.C_in.obj)
-          (Product (x, y) : a F1.map_obj)
+          (Product (TypeRep.Type, TypeRep.Type) : a F1.C_in.obj)
+          ((x, y) : a F1.map_obj)
           :
           a F2.map_obj
         -> Product (y, x));

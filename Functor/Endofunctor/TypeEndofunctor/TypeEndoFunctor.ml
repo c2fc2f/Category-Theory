@@ -124,31 +124,49 @@ end)
 
 module Reader (M : sig
   type r
-end) : S = Helper (struct
+end) : sig
   type ('r, 'a) reader = 'r -> 'a
   type 'a map_obj = (M.r, 'a) reader
 
-  let map_obj _ = TypeRep.Type
+  include S with type 'a map_obj := 'a map_obj
+end = struct
+  type ('r, 'a) reader = 'r -> 'a
 
-  let fmap (_ : 'a TypeRep.type_rep) (_ : 'b TypeRep.type_rep)
-      (f : ('a, 'b) Category.Type.morph) (x : 'a map_obj) : 'b map_obj =
-   fun (r : M.r) -> f (x r)
-end)
+  include Helper (struct
+    type ('r, 'a) reader = 'r -> 'a
+    type 'a map_obj = (M.r, 'a) reader
+
+    let map_obj _ = TypeRep.Type
+
+    let fmap (_ : 'a TypeRep.type_rep) (_ : 'b TypeRep.type_rep)
+        (f : ('a, 'b) Category.Type.morph) (x : 'a map_obj) : 'b map_obj =
+     fun (r : M.r) -> f (x r)
+  end)
+end
 
 (* ======================================================================== *)
 
 module Writer (M : sig
   type w
-end) : S = Helper (struct
+end) : sig
   type ('a, 'w) writer = 'a * 'w
   type 'a map_obj = ('a, M.w) writer
 
-  let map_obj _ = TypeRep.Type
+  include S with type 'a map_obj := 'a map_obj
+end = struct
+  type ('a, 'w) writer = 'a * 'w
 
-  let fmap (_ : 'a TypeRep.type_rep) (_ : 'b TypeRep.type_rep)
-      (f : ('a, 'b) Category.Type.morph) ((x, w) : 'a map_obj) : 'b map_obj =
-    (f x, w)
-end)
+  include Helper (struct
+    type ('a, 'w) writer = 'a * 'w
+    type 'a map_obj = ('a, M.w) writer
+
+    let map_obj _ = TypeRep.Type
+
+    let fmap (_ : 'a TypeRep.type_rep) (_ : 'b TypeRep.type_rep)
+        (f : ('a, 'b) Category.Type.morph) ((x, w) : 'a map_obj) : 'b map_obj =
+      (f x, w)
+  end)
+end
 
 (* ======================================================================== *)
 

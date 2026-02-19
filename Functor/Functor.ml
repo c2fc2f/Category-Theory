@@ -38,7 +38,10 @@ end
 (* ======================================================================== *)
 
 module Compose (F : S) (G : S with module C_in = F.C_out) :
-  S with module C_in = F.C_in and module C_out = G.C_out = struct
+  S
+    with module C_in = F.C_in
+     and module C_out = G.C_out
+     and type 'a map_obj = 'a F.map_obj G.map_obj = struct
   module C_in = F.C_in
   module C_out = G.C_out
 
@@ -54,7 +57,7 @@ end
 (* ======================================================================== *)
 
 module ProductType : sig
-  type 'a map_obj = Product : ('b * 'c) -> ('b * 'c) map_obj
+  type 'a map_obj = 'a
 
   module C_in : module type of Category.Product (Category.Type) (Category.Type)
   module C_out = Category.Type
@@ -68,13 +71,13 @@ end = struct
   module C_in = Category.Product (Category.Type) (Category.Type)
   module C_out = Category.Type
 
-  type 'a map_obj = Product : ('b * 'c) -> ('b * 'c) map_obj
+  type 'a map_obj = 'a
 
   let map_obj _ = TypeRep.Type
 
   let fmap (type a b) (_ : a C_in.obj) (_ : b C_in.obj)
       (Morph (f, f') : (a, b) C_in.morph) : (a map_obj, b map_obj) C_out.morph =
-   fun (Product (x, x')) -> Product (f x, f' x')
+   fun (x, x') -> (f x, f' x')
 end
 
 (* ======================================================================== *)
@@ -129,6 +132,8 @@ module Hom (C : Category.S) = struct
 
   type 'a map_obj = Hom : ('x, 'y) C.morph -> ('x * 'y) map_obj
 
+  let map_obj _ = TypeRep.Type
+
   let fmap (type a b) (C_in.Product (oa_op, oa) : a C_in.obj)
       (C_in.Product (ob_op, ob) : b C_in.obj)
       (C_in.Morph (f_op, g) : (a, b) C_in.morph) : a map_obj -> b map_obj =
@@ -138,8 +143,8 @@ end
 
 (* ======================================================================== *)
 
-module Id (C : Category.S) : S with module C_in = C and module C_out = C =
-struct
+module Id (C : Category.S) :
+  S with module C_in = C and module C_out = C and type 'a map_obj = 'a = struct
   module C_in = C
   module C_out = C
 
@@ -150,4 +155,73 @@ struct
   let fmap (type a b) (_ : a C_in.obj) (_ : b C_in.obj) (f : (a, b) C_in.morph)
       : (a map_obj, b map_obj) C_out.morph =
     f
+end
+
+(* ======================================================================== *)
+
+module HomFunctorLeft
+    (F : S)
+    (G : S with module C_in = F.C_out and module C_out = F.C_in) : sig
+  type 'a map_obj =
+    | Hom : ('x F.map_obj, 'y) F.C_out.morph -> ('x * 'y) map_obj
+
+  module C_in :
+      module type of Category.Product (Category.Dual (F.C_in)) (F.C_out)
+
+  module C_out = Category.Type
+
+  include
+    S
+      with module C_in := C_in
+       and module C_out := C_out
+       and type 'a map_obj := 'a map_obj
+end = struct
+  module C_in = Category.Product (Category.Dual (F.C_in)) (F.C_out)
+  module C_out = Category.Type
+
+  type 'a map_obj =
+    | Hom : ('x F.map_obj, 'y) F.C_out.morph -> ('x * 'y) map_obj
+
+  let map_obj _ = TypeRep.Type
+
+  let fmap (type a b) (C_in.Product (oa_op, oa) : a C_in.obj)
+      (C_in.Product (ob_op, ob) : b C_in.obj)
+      (C_in.Morph (f_op, g) : (a, b) C_in.morph) (Hom h : a map_obj) : b map_obj
+      =
+    Hom
+      (F.C_out.compose (F.map_obj ob_op) oa ob g
+         (F.C_out.compose (F.map_obj ob_op) (F.map_obj oa_op) oa h
+            (F.fmap ob_op oa_op f_op)))
+end
+
+module HomFunctorRight
+    (F : S)
+    (G : S with module C_in = F.C_out and module C_out = F.C_in) : sig
+  type 'a map_obj = Hom : ('x, 'y G.map_obj) F.C_in.morph -> ('x * 'y) map_obj
+
+  module C_in :
+      module type of Category.Product (Category.Dual (F.C_in)) (F.C_out)
+
+  module C_out = Category.Type
+
+  include
+    S
+      with module C_in := C_in
+       and module C_out := C_out
+       and type 'a map_obj := 'a map_obj
+end = struct
+  module C_in = Category.Product (Category.Dual (F.C_in)) (F.C_out)
+  module C_out = Category.Type
+
+  type 'a map_obj = Hom : ('x, 'y G.map_obj) F.C_in.morph -> ('x * 'y) map_obj
+
+  let map_obj _ = TypeRep.Type
+
+  let fmap (type a b) (C_in.Product (oa_op, oa) : a C_in.obj)
+      (C_in.Product (ob_op, ob) : b C_in.obj)
+      (C_in.Morph (f_op, g) : (a, b) C_in.morph) (Hom h : a map_obj) : b map_obj
+      =
+    Hom
+      (F.C_in.compose ob_op (G.map_obj oa) (G.map_obj ob) (G.fmap oa ob g)
+         (F.C_in.compose ob_op oa_op (G.map_obj oa) h f_op))
 end

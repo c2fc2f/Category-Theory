@@ -34,7 +34,7 @@
             fi
 
             echo "Syncing tools: ocaml-lsp-server, dune, utop..."
-            opam install dune utop ocaml-lsp-server -y
+            opam install dune utop ocaml-lsp-server ocamlformat -y
 
             eval $(opam env)
           '';
